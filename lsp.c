@@ -22,7 +22,18 @@ int main(int argc, char** argv)
         char* input = readline("Lips> ");
         add_history(input);
 
-        printf("Lips> %s\n", input);
+        // parse input
+        mpc_result_t result;
+        if(mpc_parse("<stdin>", input, Lispy, &result)){
+            // on success print AST
+            mpc_ast_print(result.output);
+            mpc_ast_delete(result.output);
+        } else {
+            // otherwise print error
+            mpc_err_print(result.error);
+            mpc_err_delete(result.error);
+        }
+
         free(input);
     }
         
