@@ -2,6 +2,34 @@
 #include "editline/readline.h"
 #include <stdio.h>
 
+long eval_op(long x, char* op, long y){
+    if(strcmp(op, "+")==0) return x + y;
+    if(strcmp(op, "-")==0) return x - y;
+    if(strcmp(op, "*")==0) return x * y;
+    if(strcmp(op, "/")==0) return x / y;
+    return 0;
+}
+
+long eval(mpc_ast_t* ast){
+    if(strstr(ast->tag, "number")){
+        return atoi(ast->contents);
+    }
+
+    // op is always second child. first is '(' 
+    char* op = ast->children[1]->contents;
+
+    // next operand is third child
+    char* x = eval(ast->children[2]);
+
+    // iterate the remaining children and combine
+    int i = 3;
+    while(strstr(ast->children[i]->tag, "expr")){
+        x = eval_op(x, op, eval(ast->children[i]));
+        i++;
+    }
+    return x;
+}
+
 int main(int argc, char** argv)
 {
     mpc_parser_t* Number = mpc_new("number");
@@ -25,9 +53,12 @@ int main(int argc, char** argv)
         // parse input
         mpc_result_t result;
         if(mpc_parse("<stdin>", input, Lispy, &result)){
-            // on success print AST
-            mpc_ast_print(result.output);
-            mpc_ast_delete(result.output);
+            // get ast from output
+            mpc_ast_t* a = result.output; 
+            long result = eval(a);
+            printf("%li\n", result);
+            
+            mpc_ast_delete(a);
         } else {
             // otherwise print error
             mpc_err_print(result.error);
