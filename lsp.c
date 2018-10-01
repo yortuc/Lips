@@ -2,6 +2,35 @@
 #include "editline/readline.h"
 #include <stdio.h>
 
+// enum for lval (lisp evaluation result) types
+enum { LVAL_NUM, LVAL_ERR };
+
+// enum for errors
+enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
+
+
+typedef struct {
+    int type;
+    long num;
+    int err;
+} lval;
+
+// create a number type lval
+lval lval_num(long x){
+    lval v;
+    v.num = x;
+    v.type = LVAL_NUM;
+    return v;
+}
+
+// create an error type lval
+lval lval_err(int error_type){
+    lval v;
+    v.type = LVAL_ERR;
+    v.err = error_type;
+    return v;
+}
+
 long eval_op(long x, char* op, long y){
     if(strcmp(op, "+")==0) return x + y;
     if(strcmp(op, "-")==0) return x - y;
@@ -57,7 +86,7 @@ int main(int argc, char** argv)
             mpc_ast_t* a = result.output; 
             long result = eval(a);
             printf("%li\n", result);
-            
+
             mpc_ast_delete(a);
         } else {
             // otherwise print error
