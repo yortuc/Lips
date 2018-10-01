@@ -8,7 +8,6 @@ enum { LVAL_NUM, LVAL_ERR };
 // enum for errors
 enum { LERR_DIV_ZERO, LERR_BAD_OP, LERR_BAD_NUM };
 
-
 typedef struct {
     int type;
     long num;
@@ -31,24 +30,61 @@ lval lval_err(int error_type){
     return v;
 }
 
-long eval_op(long x, char* op, long y){
-    if(strcmp(op, "+")==0) return x + y;
-    if(strcmp(op, "-")==0) return x - y;
-    if(strcmp(op, "*")==0) return x * y;
-    if(strcmp(op, "/")==0) return x / y;
-    return 0;
+void lval_print(lval v){
+    switch(v.type){
+        case LVAL_NUM:
+            printf("%li", v.num);
+            break;
+        
+        case LVAL_ERR:
+            // check what type of error we have
+            if(v.err == LERR_DIV_ZERO){
+                printf("Error: Division by zero.");
+            }
+            if(v.err == LERR_BAD_OP){
+                printf("Error: Invalid operator.");
+            }
+            if(v.err == LERR_BAD_NUM){
+                printf("Errror: Invalid number.");
+            }
+            break;
+    }
 }
 
-long eval(mpc_ast_t* ast){
+// print lval with a new line at the end
+void lval_println(lval v){ lval_print(v); putchar('\n'); }
+
+lval eval_op(lval x, char* op, lval y){
+    // if one of the operands is error, return it
+    if(x.type == LVAL_ERR) { return x; }
+    if(y.type == LVAL_ERR) { return y; }
+
+    if(strcmp(op, "+")==0) { return lval_num(x.num + y.num); }
+    if(strcmp(op, "-")==0) { return lval_num(x.num - y.num); }
+    if(strcmp(op, "*")==0) { return lval_num(x.num * y.num); }
+    if(strcmp(op, "/")==0) {
+        return y.num == 0 ? 
+            lval_err(LERR_DIV_ZERO) : 
+            lval_num(x.num / y.num);
+    }
+    return lval_err(LERR_BAD_OP);
+}
+
+lval eval(mpc_ast_t* ast){
     if(strstr(ast->tag, "number")){
-        return atoi(ast->contents);
+        //check if there is an error with conversion from string to number
+        errno = 0; 
+        long x = strtol(ast->contents, NULL, 10);
+        return errno != ERANGE ? 
+                        lval_num(x) : 
+                        lval_err(LERR_BAD_NUM);
     }
 
     // op is always second child. first is '(' 
     char* op = ast->children[1]->contents;
 
     // next operand is third child
-    char* x = eval(ast->children[2]);
+    lval x = eval(ast->children[2]);
 
     // iterate the remaining children and combine
     int i = 3;
@@ -84,8 +120,8 @@ int main(int argc, char** argv)
         if(mpc_parse("<stdin>", input, Lispy, &result)){
             // get ast from output
             mpc_ast_t* a = result.output; 
-            long result = eval(a);
-            printf("%li\n", result);
+            lval result = eval(a);
+            lval_println(result);
 
             mpc_ast_delete(a);
         } else {
