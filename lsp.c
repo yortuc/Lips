@@ -59,8 +59,6 @@ lval* lval_sexpr(void){
 void lval_print(lval* v);
 
 void lval_exp_print(lval* v, char open, char close){
-    printf("lval_exp_print %i", v->count);
-
     putchar(open);
     for(int i=0; i< v->count; i++){
         lval_print(v->cell[i]);
@@ -129,8 +127,8 @@ lval* lval_read(mpc_ast_t* t){
 
     // if toor (>) or or sexpr then create an empty list
     lval* x = NULL;
-    if(strcmp(t->tag, ">") ==0) { return lval_sexpr(); }
-    if(strstr(t->tag, "sexpr")){ return lval_sexpr(); }
+    if(strcmp(t->tag, ">") == 0) { x = lval_sexpr(); }
+    if(strstr(t->tag, "sexpr")) { x = lval_sexpr(); }
 
     // fill this list with any valid expression contained within
     for(int i=0; i<t->children_num; i++){
@@ -139,7 +137,6 @@ lval* lval_read(mpc_ast_t* t){
         if(strcmp(t->children[i]->tag, "regex") == 0) { continue; }
         x = lval_add(x, lval_read(t->children[i]));
     }
-    printf("lval_read %i", x->count);
     return x;
 }
 
